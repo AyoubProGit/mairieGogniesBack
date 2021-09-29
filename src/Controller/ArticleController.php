@@ -4,14 +4,13 @@ namespace App\Controller;
 
 use App\Entity\Article;
 use App\Repository\ArticleRepository;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Normalizer\NormalizableInterface;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Component\Serializer\Serializer;
 
 class ArticleController extends AbstractController
 {
@@ -25,41 +24,47 @@ class ArticleController extends AbstractController
      */
     private $em;
 
-    public function __construct(ArticleRepository $repository, EntityManagerInterface $em)
+    /**
+     * @var KernelInterface
+     */
+    private $projectDir;
+
+    public function __construct(ArticleRepository $repository, EntityManagerInterface $em, KernelInterface $kernel)
     {
         $this->repository = $repository;
         $this->em = $em;
+        $this->projectDir = $kernel;
     }
-
 
     /**
-     * @Route("/articles/liste", name="article.liste", methods={"GET"})
+     * @Route("/articles/list", name="article.list")
      */
-    public function listArticles()
+    public function listArticles(): JsonResponse
     {
-        // On récupère la liste des articles
-        $articles = $this->repository->findAll();
+        $articles = $this->em->getRepository(Article::class)->findBy(array('is_online' => true), array('created_at' => 'DESC'));
 
-        // On spécifie qu'on utilise l'encodeur JSON
-        $encoders = [new JsonEncoder()];
+        $webPath = $this->projectDir->getProjectDir() . '/public';
+        $url = $webPath."/uploads/images/featured/";
 
-        // On instancie le "normaliseur" pour convertir la collection en tableau
-        $normalizers = [new ObjectNormalizer()];
+        $data = array();
+        foreach ($articles as $key => $article){
 
-        // On instancie le convertisseur
-        $serializer = new Serializer($normalizers, $encoders);
+            $imageName = $article->getImage()->getName();
+            $path = $url.$imageName;
+            $content = file_get_contents($path);
+            $image = base64_encode($content);
 
-        // On convertit en json
-        $jsonContent = $serializer->serialize($articles, 'json', ["groups" => "article:read"
-        ]);
+            $data[$key]['id'] = $article->getId();
+            $data[$key]['title'] = $article->getTitle();
+            $data[$key]['content'] = $article->getContent();
+            $data[$key]['tag'] = $article->getTag();
+            $data[$key]['createdAt'] = $article->getCreatedAt();
+            $data[$key]['updatedAt'] = $article->getupdatedAt();
+            $data[$key]['author'] = $article->getAuthor()->getUsername();
+            $data[$key]['image'] = $image;
 
-        // On instancie la réponse
-        $response = new Response($jsonContent);
-
-        // On ajoute l'entête HTTP
-        $response->headers->set('Content-Type', 'application/json');
-
-        // On envoie la réponse
-        return $response;
+        }
+        return new JsonResponse($data);
     }
+
 }
