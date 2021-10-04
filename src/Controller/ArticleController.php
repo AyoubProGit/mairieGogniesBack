@@ -52,7 +52,8 @@ class ArticleController extends AbstractController
             $imageName = $article->getImage()->getName();
             $path = $url.$imageName;
             $content = file_get_contents($path);
-            $image = base64_encode($content);
+            $encode = base64_encode($content);
+            $image = "data:image/png;base64,".$encode;
 
             $data[$key]['id'] = $article->getId();
             $data[$key]['title'] = $article->getTitle();
@@ -63,6 +64,35 @@ class ArticleController extends AbstractController
             $data[$key]['author'] = $article->getAuthor()->getUsername();
             $data[$key]['image'] = $image;
 
+        }
+        return new JsonResponse($data);
+    }
+
+    /**
+     * @Route("/articles/travaux", name="article.travaux")
+     */
+    public function listTravauxArticles(): JsonResponse
+    {
+        $travaux = $this->repository->filteredByTag("travaux");
+        $webPath = $this->projectDir->getProjectDir() . '/public';
+        $url = $webPath."/uploads/images/featured/";
+
+        $data = array();
+        foreach ($travaux as $key => $travail){
+
+            $imageName = $travail->getImage()->getName();
+            $path = $url.$imageName;
+            $content = file_get_contents($path);
+            $encode = base64_encode($content);
+            $image = "data:image/png;base64,".$encode;
+            $data[$key]['id'] = $travail->getId();
+            $data[$key]['title'] = $travail->getTitle();
+            $data[$key]['content'] = $travail->getContent();
+            $data[$key]['tag'] = $travail->getTag();
+            $data[$key]['createdAt'] = $travail->getCreatedAt();
+            $data[$key]['updatedAt'] = $travail->getupdatedAt();
+            $data[$key]['author'] = $travail->getAuthor()->getUsername();
+            $data[$key]['image'] = $image;
         }
         return new JsonResponse($data);
     }

@@ -6,7 +6,9 @@ use App\Entity\Event;
 use App\Repository\EventRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
@@ -24,40 +26,49 @@ class EventController extends AbstractController
      */
     private $em;
 
-    public function __construct(EventRepository $repository, EntityManagerInterface $em)
+    /**
+     * @var KernelInterface
+     */
+    private $projectDir;
+
+    public function __construct(EventRepository $repository, EntityManagerInterface $em, KernelInterface $kernel)
     {
         $this->repository = $repository;
         $this->em = $em;
+        $this->projectDir = $kernel;
     }
 
+
     /**
-     * @Route("/events/liste", name="event.liste", methods={"GET"})
+     * @Route("/events/list", name="events.list")
      */
-    public function listEvents()
+    public function listEvents(): JsonResponse
     {
-        // On récupère la liste des articles
-        $events = $this->repository->findAll();
+        $events = $this->em->getRepository(Event::class)->findBy(array('is_online' => true), array('created_at' => 'DESC'));
 
-        // On spécifie qu'on utilise l'encodeur JSON
-        $encoders = [new JsonEncoder()];
+        $webPath = $this->projectDir->getProjectDir() . '/public';
+        $url = $webPath."/uploads/images/featured/";
 
-        // On instancie le "normaliseur" pour convertir la collection en tableau
-        $normalizers = [new ObjectNormalizer()];
+        $data = array();
+        foreach ($events as $key => $event){
 
-        // On instancie le convertisseur
-        $serializer = new Serializer($normalizers, $encoders);
+            $imageName = $event->getImage()->getName();
+            $path = $url.$imageName;
+            $content = file_get_contents($path);
+            $image = base64_encode($content);
 
-        // On convertit en json
-        $jsonContent = $serializer->serialize($events, 'json', ["groups" => "event:read"]);
+            $data[$key]['id'] = $event->getId();
+            $data[$key]['title'] = $event->getTitle();
+            $data[$key]['content'] = $event->getDescription();
+            $data[$key]['dateEvent'] = $event->getDate();
+            $data[$key]['place'] = $event->getPlace();
+            $data[$key]['createdAt'] = $event->getCreatedAt();
+            $data[$key]['updatedAt'] = $event->getupdatedAt();
+            $data[$key]['author'] = $event->getAuthor()->getUsername();
+            $data[$key]['image'] = $image;
 
-        // On instancie la réponse
-        $response = new Response($jsonContent);
-
-        // On ajoute l'entête HTTP
-        $response->headers->set('Content-Type', 'application/json');
-
-        // On envoie la réponse
-        return $response;
+        }
+        return new JsonResponse($data);
     }
 
 

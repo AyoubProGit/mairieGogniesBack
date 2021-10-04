@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Article;
+use App\Entity\Tag;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -35,16 +36,31 @@ class ArticleRepository extends ServiceEntityRepository
      */
     public function findLatest(): array
     {
-        return $this->findVisibleQuery()
+        return $this->findByVisibleQuery()
             ->setMaxResults(4)
             ->getQuery()
             ->getResult();
     }
 
-    private function findVisibleQuery(): QueryBuilder
+    private function findByVisibleQuery(): QueryBuilder
     {
         return $this->createQueryBuilder('p')
-            ->where('p.is_online = true');
+            ->where('p.is_online = true')
+            ->andWhere('p.tag = travaux')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function filteredByTag($tag)
+    {
+        $query = $this->getEntityManager()
+            ->createQuery(
+                'SELECT p, c FROM AppBundle:Article p
+        JOIN p.tag c
+        WHERE p.tag = :tag'
+            )->setParameter('tag', $tag);
+
+        return $query;
     }
 
     // /**
