@@ -55,8 +55,8 @@ class EventController extends AbstractController
             $imageName = $event->getImage()->getName();
             $path = $url.$imageName;
             $content = file_get_contents($path);
-            $image = base64_encode($content);
-
+            $encode = base64_encode($content);
+            $image = "data:image/png;base64,".$encode;
             $data[$key]['id'] = $event->getId();
             $data[$key]['title'] = $event->getTitle();
             $data[$key]['content'] = $event->getDescription();
