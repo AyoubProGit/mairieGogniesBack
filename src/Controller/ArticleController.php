@@ -6,6 +6,7 @@ use App\Entity\Article;
 use App\Repository\ArticleRepository;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Container\ContainerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -36,13 +37,8 @@ class ArticleController extends AbstractController
         $this->projectDir = $kernel;
     }
 
-    /**
-     * @Route("/articles/list", name="article.list")
-     */
-    public function listArticles(): JsonResponse
+    public function formatArticle($articles)
     {
-        $articles = $this->em->getRepository(Article::class)->findBy(array('is_online' => true), array('created_at' => 'DESC'));
-
         $webPath = $this->projectDir->getProjectDir() . '/public';
         $url = $webPath."/uploads/images/featured/";
 
@@ -55,6 +51,7 @@ class ArticleController extends AbstractController
             $encode = base64_encode($content);
             $image = "data:image/png;base64,".$encode;
 
+            dd($article->getTag());
             $data[$key]['id'] = $article->getId();
             $data[$key]['title'] = $article->getTitle();
             $data[$key]['content'] = $article->getContent();
@@ -65,6 +62,27 @@ class ArticleController extends AbstractController
             $data[$key]['image'] = $image;
 
         }
+        return $data;
+    }
+
+    /**
+     * @Route("/articles/list", name="article.list")
+     */
+    public function listArticles(): JsonResponse
+    {
+        $articles = $this->em->getRepository(Article::class)->findBy(array('is_online' => true), array('created_at' => 'DESC'));
+        $data = $this->formatArticle($articles);
+        return new JsonResponse($data);
+    }
+
+
+    /**
+     * @Route("/articles/last", name="article.last")
+     */
+    public function lastArticles(): JsonResponse
+    {
+        $articles = $this->em->getRepository(Article::class)->findBy(array('is_online' => true), array('created_at' => 'DESC'),3);
+        $data = $this->formatArticle($articles);
         return new JsonResponse($data);
     }
 
@@ -73,28 +91,14 @@ class ArticleController extends AbstractController
      */
     public function listTravauxArticles(): JsonResponse
     {
-        $travaux = $this->repository->filteredByTag("travaux");
-        $webPath = $this->projectDir->getProjectDir() . '/public';
-        $url = $webPath."/uploads/images/featured/";
+        $travaux = $this->em->getRepository(Article::class)->findBy(array('is_online' => true), array('created_at' => 'DESC'));
 
-        $data = array();
-        foreach ($travaux as $key => $travail){
-
-            $imageName = $travail->getImage()->getName();
-            $path = $url.$imageName;
-            $content = file_get_contents($path);
-            $encode = base64_encode($content);
-            $image = "data:image/png;base64,".$encode;
-            $data[$key]['id'] = $travail->getId();
-            $data[$key]['title'] = $travail->getTitle();
-            $data[$key]['content'] = $travail->getContent();
-            $data[$key]['tag'] = $travail->getTag();
-            $data[$key]['createdAt'] = $travail->getCreatedAt();
-            $data[$key]['updatedAt'] = $travail->getupdatedAt();
-            $data[$key]['author'] = $travail->getAuthor()->getUsername();
-            $data[$key]['image'] = $image;
+        foreach ($travaux as $travail) {
+            $tag = $travail;
+            dd($tag->getTag());
         }
-        return new JsonResponse($data);
+        $data = $this->formatArticle($travaux);
+        return new JsonResponse("");
     }
 
 }

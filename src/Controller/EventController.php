@@ -38,14 +38,7 @@ class EventController extends AbstractController
         $this->projectDir = $kernel;
     }
 
-
-    /**
-     * @Route("/events/list", name="events.list")
-     */
-    public function listEvents(): JsonResponse
-    {
-        $events = $this->em->getRepository(Event::class)->findBy(array('is_online' => true), array('created_at' => 'DESC'));
-
+    public function formatEvents($events) {
         $webPath = $this->projectDir->getProjectDir() . '/public';
         $url = $webPath."/uploads/images/featured/";
 
@@ -68,8 +61,32 @@ class EventController extends AbstractController
             $data[$key]['image'] = $image;
 
         }
+        return $data;
+    }
+
+
+    /**
+     * @Route("/events/list", name="events.list")
+     */
+    public function listEvents(): JsonResponse
+    {
+        $events = $this->em->getRepository(Event::class)->findBy(array('is_online' => true), array('created_at' => 'DESC'));
+
+        $data = $this->formatEvents($events);
+
         return new JsonResponse($data);
     }
 
+    /**
+     * @Route("/events/last", name="events.last")
+     */
+    public function lastEvents(): JsonResponse
+    {
+        $events = $this->em->getRepository(Event::class)->findBy(array('is_online' => true), array('created_at' => 'DESC'), 3);
+
+        $data = $this->formatEvents($events);
+
+        return new JsonResponse($data);
+    }
 
 }

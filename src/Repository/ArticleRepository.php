@@ -16,51 +16,21 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ArticleRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(ManagerRegistry $registry )
     {
         parent::__construct($registry, Article::class);
     }
 
-    /**
-     * @return Article[]
-     */
-    public function findAllVisible(): array
+
+    public function getTravauxTag(): QueryBuilder
     {
-        return $this->findVisibleQuery()
+        $tags = $this->createQueryBuilder('a')
+            ->select('a.id as article_id, t.id as tag_id')
+            ->innerJoin('t.articles', 'c')
+            ->where('c.name = :tag_name')
+            ->setParameter('tag_name', "travaux")
             ->getQuery()
             ->getResult();
-    }
-
-    /**
-     * @return Article[]
-     */
-    public function findLatest(): array
-    {
-        return $this->findByVisibleQuery()
-            ->setMaxResults(4)
-            ->getQuery()
-            ->getResult();
-    }
-
-    private function findByVisibleQuery(): QueryBuilder
-    {
-        return $this->createQueryBuilder('p')
-            ->where('p.is_online = true')
-            ->andWhere('p.tag = travaux')
-            ->getQuery()
-            ->getResult();
-    }
-
-    public function filteredByTag($tag)
-    {
-        $query = $this->getEntityManager()
-            ->createQuery(
-                'SELECT p, c FROM AppBundle:Article p
-        JOIN p.tag c
-        WHERE p.tag = :tag'
-            )->setParameter('tag', $tag);
-
-        return $query;
     }
 
     // /**
