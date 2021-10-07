@@ -20,32 +20,7 @@ class EventRepository extends ServiceEntityRepository
         parent::__construct($registry, Event::class);
     }
 
-    /**
-     * @return Event[]
-     */
-    public function findAllVisible(): array
-    {
-        return $this->findVisibleQuery()
-            ->getQuery()
-            ->getResult();
-    }
 
-    /**
-     * @return Event[]
-     */
-    public function findLatest(): array
-    {
-        return $this->findVisibleQuery()
-            ->setMaxResults(4)
-            ->getQuery()
-            ->getResult();
-    }
-
-    private function findVisibleQuery(): QueryBuilder
-    {
-        return $this->createQueryBuilder('p')
-            ->where('p.is_online = true');
-    }
 
     // /**
     //  * @return Event[] Returns an array of Event objects

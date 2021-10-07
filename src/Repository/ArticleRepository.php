@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Article;
+use App\Entity\Tag;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -15,36 +16,21 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ArticleRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(ManagerRegistry $registry )
     {
         parent::__construct($registry, Article::class);
     }
 
-    /**
-     * @return Article[]
-     */
-    public function findAllVisible(): array
+
+    public function getTravauxTag(): QueryBuilder
     {
-        return $this->findVisibleQuery()
+        $tags = $this->createQueryBuilder('a')
+            ->select('a.id as article_id, t.id as tag_id')
+            ->innerJoin('t.articles', 'c')
+            ->where('c.name = :tag_name')
+            ->setParameter('tag_name', "travaux")
             ->getQuery()
             ->getResult();
-    }
-
-    /**
-     * @return Article[]
-     */
-    public function findLatest(): array
-    {
-        return $this->findVisibleQuery()
-            ->setMaxResults(4)
-            ->getQuery()
-            ->getResult();
-    }
-
-    private function findVisibleQuery(): QueryBuilder
-    {
-        return $this->createQueryBuilder('p')
-            ->where('p.is_online = true');
     }
 
     // /**

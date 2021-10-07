@@ -68,8 +68,16 @@ class Article
     private $slug;
 
     /**
-     * @ORM\ManyToMany(targetEntity=Tag::class, inversedBy="article")
-     * @Groups({"article:read"})
+     * @ORM\ManyToMany(targetEntity=Tag::class)
+     * @ORM\JoinTable(
+     *  name="article_tag",
+     *  joinColumns={
+     *      @ORM\JoinColumn(name="article_id", referencedColumnName="id")
+     *  },
+     *  inverseJoinColumns={
+     *      @ORM\JoinColumn(name="tag_id", referencedColumnName="id")
+     *  }
+     * )
      */
     private $tag;
 
